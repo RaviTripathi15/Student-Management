@@ -1,44 +1,11 @@
-<<<<<<< HEAD
-import mongoose from "mongoose";
-
-const userSchema = new mongoose.Schema(
-  {
-    name: {
-      type: String,
-      required: true,
-      trim: true
-    },
-
-    email: {
-      type: String,
-      required: true,
-      unique: true
-    },
-
-    password: {
-      type: String,
-      required: true
-    },
-
-    role: {
-      type: String,
-      enum: ["Admin", "Teacher", "Student"],
-      default: "Student"
-    }
-  },
-  {
-    timestamps: true
-  }
-);
-
-const User = mongoose.model("User", userSchema);
-
-export default User;
-=======
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    trim: true
+  },
   email: {
     type: String,
     required: true,
@@ -71,12 +38,11 @@ const userSchema = new mongoose.Schema({
   }
 });
 
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
+userSchema.pre('save', async function() {
+  if (!this.isModified('password')) return;
   
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
-  next();
 });
 
 userSchema.methods.matchPassword = async function(enteredPassword) {
@@ -84,4 +50,3 @@ userSchema.methods.matchPassword = async function(enteredPassword) {
 };
 
 module.exports = mongoose.model('User', userSchema);
->>>>>>> f433320e63b0b06420c9a1d7e9143a961f6f97f7

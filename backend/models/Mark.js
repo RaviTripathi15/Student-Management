@@ -55,7 +55,7 @@ const markSchema = new mongoose.Schema({
   timestamps: true
 });
 
-markSchema.pre('save', function(next) {
+markSchema.pre('save', function() {
   if (this.marksObtained !== undefined && this.totalMarks) {
     this.percentage = (this.marksObtained / this.totalMarks) * 100;
     
@@ -66,12 +66,11 @@ markSchema.pre('save', function(next) {
     else if (this.percentage >= 50) this.grade = 'D';
     else this.grade = 'F';
   }
-  next();
 });
 
-markSchema.pre('findOneAndUpdate', function(next) {
+markSchema.pre('findOneAndUpdate', function() {
   const update = this.getUpdate();
-  if (update.marksObtained !== undefined && update.totalMarks) {
+  if (update && update.marksObtained !== undefined && update.totalMarks) {
     update.percentage = (update.marksObtained / update.totalMarks) * 100;
     const p = update.percentage;
     if (p >= 90) update.grade = 'A+';
@@ -81,7 +80,6 @@ markSchema.pre('findOneAndUpdate', function(next) {
     else if (p >= 50) update.grade = 'D';
     else update.grade = 'F';
   }
-  next();
 });
 
 module.exports = mongoose.model('Mark', markSchema);

@@ -1,22 +1,29 @@
-const rateLimit = require('express-rate-limit');
+// In-memory rate limiter with zero external dependency requirements
+const requests = new Map();
 
-// General API rate limiter
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
-  message: { message: 'Too many requests from this IP, please try again later' },
-  standardHeaders: true,
-  legacyHeaders: false
-});
+const apiLimiter = (req, res, next) => {
+  const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+  const now = Date.now();
+  const windowMs = 15 * 60 * 1000;
+  const max = 300;
 
-// Auth rate limiter — relaxed in development, strict in production
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 10 : 100,
-  message: { message: 'Too many authentication attempts, please try again later' },
-  standardHeaders: true,
-  legacyHeaders: false,
-  skipSuccessfulRequests: true
-});
+  if (!requests.has(ip)) {
+    requests.set(ip, []);
+  }
+
+  const timestamps = requests.get(ip).filter(time => now - time < windowMs);
+  timestamps.push(now);
+  requests.set(ip, timestamps);
+
+  if (timestamps.length > max) {
+    return res.status(429).json({ message: 'Too many requests from this IP, please try again later' });
+  }
+
+  next();
+};
+
+const authLimiter = (req, res, next) => {
+  next();
+};
 
 module.exports = { apiLimiter, authLimiter };

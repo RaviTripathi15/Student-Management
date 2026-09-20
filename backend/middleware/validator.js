@@ -1,67 +1,37 @@
-const { body, validationResult } = require('express-validator');
-
+// Pure JavaScript request validator (zero external dependency requirements)
 const validate = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ 
-      success: false,
-      errors: errors.array().map(err => ({
-        field: err.path,
-        message: err.msg
-      }))
-    });
+  next();
+};
+
+const registerValidation = (req, res, next) => {
+  const { email, password, role } = req.body;
+  if (!email || !email.includes('@')) {
+    return res.status(400).json({ success: false, message: 'Please provide a valid email address' });
+  }
+  if (!password || password.length < 6) {
+    return res.status(400).json({ success: false, message: 'Password must be at least 6 characters long' });
+  }
+  if (role && !['admin', 'teacher', 'student'].includes(role.toLowerCase())) {
+    return res.status(400).json({ success: false, message: 'Role must be admin, teacher, or student' });
   }
   next();
 };
 
-const registerValidation = [
-  body('email')
-    .isEmail()
-    .withMessage('Please provide a valid email')
-    .normalizeEmail()
-    .trim(),
-  body('password')
-    .isLength({ min: 8 })
-    .withMessage('Password must be at least 8 characters')
-    .matches(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])/)
-    .withMessage('Password must contain at least one uppercase, one lowercase, and one number'),
-  body('role')
-    .isIn(['admin', 'teacher', 'student'])
-    .withMessage('Invalid role')
-];
+const loginValidation = (req, res, next) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ success: false, message: 'Email and password are required' });
+  }
+  next();
+};
 
-const loginValidation = [
-  body('email')
-    .isEmail()
-    .withMessage('Please provide a valid email')
-    .normalizeEmail()
-    .trim(),
-  body('password')
-    .notEmpty()
-    .withMessage('Password is required')
-];
-
-const studentValidation = [
-  body('firstName')
-    .notEmpty()
-    .withMessage('First name is required')
-    .trim(),
-  body('lastName')
-    .notEmpty()
-    .withMessage('Last name is required')
-    .trim(),
-  body('email')
-    .isEmail()
-    .withMessage('Please provide a valid email')
-    .normalizeEmail(),
-  body('phone')
-    .matches(/^[0-9]{10,15}$/)
-    .withMessage('Please provide a valid phone number (10-15 digits)'),
-  body('rollNumber')
-    .notEmpty()
-    .withMessage('Roll number is required')
-    .trim()
-];
+const studentValidation = (req, res, next) => {
+  const { firstName, lastName, rollNumber } = req.body;
+  if (!firstName || !lastName || !rollNumber) {
+    return res.status(400).json({ success: false, message: 'First name, last name, and roll number are required' });
+  }
+  next();
+};
 
 module.exports = {
   validate,

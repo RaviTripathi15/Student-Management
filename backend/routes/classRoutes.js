@@ -1,33 +1,21 @@
-import express from "express";
-import {
+const express = require('express');
+const router = express.Router();
+const {
   getAllClasses,
   getClassById,
   createClass,
   updateClass,
-  deleteClass,
-  addStudentToClass,
-  removeStudentFromClass
-} from "../controllers/classController.js";
-import { protect, authorize } from "../middleware/authMiddleware.js";
+  deleteClass
+} = require('../controllers/classController');
+const protect = require('../middleware/auth');
+const authorize = require('../middleware/authorize');
 
-const router = express.Router();
-
-// All routes require authentication
 router.use(protect);
 
-// Admin and Teacher can view all classes
-router.get("/", authorize("Admin", "Teacher"), getAllClasses);
+router.get('/', getAllClasses);
+router.get('/:id', getClassById);
+router.post('/', authorize('admin'), createClass);
+router.put('/:id', authorize('admin'), updateClass);
+router.delete('/:id', authorize('admin'), deleteClass);
 
-// Admin and Teacher can view single class
-router.get("/:id", authorize("Admin", "Teacher"), getClassById);
-
-// Only Admin can create, update, delete classes
-router.post("/", authorize("Admin"), createClass);
-router.put("/:id", authorize("Admin"), updateClass);
-router.delete("/:id", authorize("Admin"), deleteClass);
-
-// Manage students in class
-router.post("/:id/students", authorize("Admin"), addStudentToClass);
-router.delete("/:id/students/:studentId", authorize("Admin"), removeStudentFromClass);
-
-export default router;
+module.exports = router;

@@ -1,39 +1,21 @@
-import express from "express";
-import {
+const express = require('express');
+const router = express.Router();
+const {
   getAllAssignments,
   getAssignmentById,
-  getAssignmentsByClass,
-  getAssignmentsByTeacher,
   createAssignment,
   updateAssignment,
-  deleteAssignment,
-  closeAssignment
-} from "../controllers/assignmentController.js";
-import { protect, authorize } from "../middleware/authMiddleware.js";
+  deleteAssignment
+} = require('../controllers/assignmentController');
+const protect = require('../middleware/auth');
+const authorize = require('../middleware/authorize');
 
-const router = express.Router();
-
-// All routes require authentication
 router.use(protect);
 
-// Admin and Teacher can view all assignments
-router.get("/", authorize("Admin", "Teacher"), getAllAssignments);
+router.get('/', getAllAssignments);
+router.get('/:id', getAssignmentById);
+router.post('/', authorize('admin', 'teacher'), createAssignment);
+router.put('/:id', authorize('admin', 'teacher'), updateAssignment);
+router.delete('/:id', authorize('admin', 'teacher'), deleteAssignment);
 
-// Admin, Teacher, and Student can view assignments by class
-router.get("/class/:classId", authorize("Admin", "Teacher", "Student"), getAssignmentsByClass);
-
-// Admin and Teacher can view assignments by teacher
-router.get("/teacher/:teacherId", authorize("Admin", "Teacher"), getAssignmentsByTeacher);
-
-// Admin, Teacher, and Student can view single assignment
-router.get("/:id", authorize("Admin", "Teacher", "Student"), getAssignmentById);
-
-// Admin and Teacher can create, update, delete assignments
-router.post("/", authorize("Admin", "Teacher"), createAssignment);
-router.put("/:id", authorize("Admin", "Teacher"), updateAssignment);
-router.delete("/:id", authorize("Admin", "Teacher"), deleteAssignment);
-
-// Close assignment
-router.put("/:id/close", authorize("Admin", "Teacher"), closeAssignment);
-
-export default router;
+module.exports = router;

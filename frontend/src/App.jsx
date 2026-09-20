@@ -1,12 +1,4 @@
-<<<<<<< HEAD
-import AppRoutes from "./routes/AppRoutes";
-
-function App() {
-  return <AppRoutes />;
-}
-
-export default App;
-=======
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Auth/Login';
@@ -33,11 +25,22 @@ import StudentLayout from './components/StudentLayout';
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-500">Loading...</div>;
-  if (!user) return <Navigate to="/login" replace />;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-gray-500 font-medium">
+        Loading...
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     return <Navigate to="/unauthorized" replace />;
   }
+
   return children;
 };
 
@@ -47,89 +50,131 @@ function App() {
       <Router>
         <Routes>
           {/* Public routes */}
-          <Route path="/login"    element={<Login />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
 
-          {/* Admin routes — wrapped in AdminLayout for persistent navbar */}
-          <Route path="/admin" element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AdminLayout><AdminDashboard /></AdminLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/students" element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AdminLayout><Students /></AdminLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/teachers" element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AdminLayout><Teachers /></AdminLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/classes" element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AdminLayout><Classes /></AdminLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/subjects" element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AdminLayout><Subjects /></AdminLayout>
-            </ProtectedRoute>
-          } />
+          {/* Admin routes */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminLayout><AdminDashboard /></AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/students"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminLayout><Students /></AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/teachers"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminLayout><Teachers /></AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/classes"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminLayout><Classes /></AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/subjects"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminLayout><Subjects /></AdminLayout>
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Teacher routes — wrapped in TeacherLayout */}
-          <Route path="/teacher" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
-              <TeacherLayout><TeacherDashboard /></TeacherLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/teacher/attendance" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
-              <TeacherLayout><TeacherAttendance /></TeacherLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/teacher/assignments" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
-              <TeacherLayout><TeacherAssignments /></TeacherLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/teacher/marks" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
-              <TeacherLayout><TeacherMarks /></TeacherLayout>
-            </ProtectedRoute>
-          } />
+          {/* Teacher routes */}
+          <Route
+            path="/teacher"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <TeacherLayout><TeacherDashboard /></TeacherLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/teacher/attendance"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <TeacherLayout><TeacherAttendance /></TeacherLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/teacher/assignments"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <TeacherLayout><TeacherAssignments /></TeacherLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/teacher/marks"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <TeacherLayout><TeacherMarks /></TeacherLayout>
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Student routes — wrapped in StudentLayout */}
-          <Route path="/student" element={
-            <ProtectedRoute allowedRoles={['student']}>
-              <StudentLayout><StudentDashboard /></StudentLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/student/profile" element={
-            <ProtectedRoute allowedRoles={['student']}>
-              <StudentLayout><StudentProfile /></StudentLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/student/attendance" element={
-            <ProtectedRoute allowedRoles={['student']}>
-              <StudentLayout><StudentAttendance /></StudentLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/student/assignments" element={
-            <ProtectedRoute allowedRoles={['student']}>
-              <StudentLayout><StudentAssignments /></StudentLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/student/marks" element={
-            <ProtectedRoute allowedRoles={['student']}>
-              <StudentLayout><StudentMarks /></StudentLayout>
-            </ProtectedRoute>
-          } />
+          {/* Student routes */}
+          <Route
+            path="/student"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentLayout><StudentDashboard /></StudentLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/profile"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentLayout><StudentProfile /></StudentLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/attendance"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentLayout><StudentAttendance /></StudentLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/assignments"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentLayout><StudentAssignments /></StudentLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/marks"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentLayout><StudentMarks /></StudentLayout>
+              </ProtectedRoute>
+            }
+          />
 
           {/* Fallback */}
-          <Route path="/" element={<Navigate to="/login" />} />
-          <Route path="*" element={<Navigate to="/login" />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </Router>
     </AuthProvider>
@@ -137,4 +182,3 @@ function App() {
 }
 
 export default App;
->>>>>>> f433320e63b0b06420c9a1d7e9143a961f6f97f7

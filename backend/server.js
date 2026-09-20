@@ -1,29 +1,5 @@
-<<<<<<< HEAD
-import dns from 'dns';
-dns.setServers(['8.8.8.8', '8.8.4.4']);
-dns.setDefaultResultOrder('ipv4first');
-
-import dotenv from "dotenv";
-dotenv.config();
-
-import app from "./app.js";
-import connectDB from "./config/db.js";
-
-console.log(process.env.MONGO_URI);
-
-connectDB();
-
-const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-=======
 const express = require('express');
 const cors = require('cors');
-const helmet = require('helmet');
-const mongoSanitize = require('express-mongo-sanitize');
-const hpp = require('hpp');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
@@ -33,10 +9,13 @@ dotenv.config();
 
 const app = express();
 
-// Security middleware
-app.use(helmet());
-app.use(mongoSanitize());
-app.use(hpp());
+// Security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  next();
+});
 
 // CORS
 app.use(cors({
@@ -53,7 +32,7 @@ connectDB();
 
 // Root route
 app.get('/', (req, res) => {
-  res.json({ message: 'Student Management System API' });
+  res.json({ message: 'Student Management System API is running' });
 });
 
 // API routes with rate limiting
@@ -79,6 +58,4 @@ app.listen(PORT, () => {
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
   console.log(`Error: ${err.message}`);
-  process.exit(1);
 });
->>>>>>> f433320e63b0b06420c9a1d7e9143a961f6f97f7

@@ -1,130 +1,3 @@
-<<<<<<< HEAD
-import Teacher from "../models/Teacher.js";
-
-// @desc    Get all teachers
-// @route   GET /api/teachers
-// @access  Private (Admin)
-export const getAllTeachers = async (req, res) => {
-  try {
-    const teachers = await Teacher.find()
-      .populate("user", "name email role")
-      .populate("subjects", "name code")
-      .populate("classes", "name grade section")
-      .sort({ createdAt: -1 });
-    
-    res.json(teachers);
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
-
-// @desc    Get single teacher
-// @route   GET /api/teachers/:id
-// @access  Private (Admin, Teacher - own profile)
-export const getTeacherById = async (req, res) => {
-  try {
-    const teacher = await Teacher.findById(req.params.id)
-      .populate("user", "name email role")
-      .populate("subjects", "name code credits")
-      .populate("classes", "name grade section");
-    
-    if (!teacher) {
-      return res.status(404).json({ message: "Teacher not found" });
-    }
-    
-    res.json(teacher);
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
-
-// @desc    Create new teacher
-// @route   POST /api/teachers
-// @access  Private (Admin)
-export const createTeacher = async (req, res) => {
-  try {
-    const teacher = await Teacher.create(req.body);
-    
-    // Add teacher to subjects if provided
-    if (req.body.subjects && req.body.subjects.length > 0) {
-      const Subject = (await import("../models/Subject.js")).default;
-      await Subject.updateMany(
-        { _id: { $in: req.body.subjects } },
-        { $push: { teachers: teacher._id } }
-      );
-    }
-    
-    // Add teacher to classes if provided
-    if (req.body.classes && req.body.classes.length > 0) {
-      const Class = (await import("../models/Class.js")).default;
-      await Class.updateMany(
-        { _id: { $in: req.body.classes } },
-        { $push: { subjects: teacher._id } }
-      );
-    }
-    
-    res.status(201).json(teacher);
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
-
-// @desc    Update teacher
-// @route   PUT /api/teachers/:id
-// @access  Private (Admin, Teacher - own profile)
-export const updateTeacher = async (req, res) => {
-  try {
-    const teacher = await Teacher.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
-    
-    if (!teacher) {
-      return res.status(404).json({ message: "Teacher not found" });
-    }
-    
-    res.json(teacher);
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
-
-// @desc    Delete teacher
-// @route   DELETE /api/teachers/:id
-// @access  Private (Admin)
-export const deleteTeacher = async (req, res) => {
-  try {
-    const teacher = await Teacher.findByIdAndDelete(req.params.id);
-    
-    if (!teacher) {
-      return res.status(404).json({ message: "Teacher not found" });
-    }
-    
-    // Remove teacher from subjects
-    if (teacher.subjects && teacher.subjects.length > 0) {
-      const Subject = (await import("../models/Subject.js")).default;
-      await Subject.updateMany(
-        { _id: { $in: teacher.subjects } },
-        { $pull: { teachers: teacher._id } }
-      );
-    }
-    
-    // Remove teacher from classes
-    if (teacher.classes && teacher.classes.length > 0) {
-      const Class = (await import("../models/Class.js")).default;
-      await Class.updateMany(
-        { _id: { $in: teacher.classes } },
-        { $pull: { subjects: teacher._id } }
-      );
-    }
-    
-    res.json({ message: "Teacher deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
-=======
 const Attendance = require('../models/Attendance');
 const Assignment = require('../models/Assignment');
 const Mark = require('../models/Mark');
@@ -136,8 +9,7 @@ const markAttendance = async (req, res) => {
   try {
     const { studentId, classId, subjectId, date, status, remarks } = req.body;
 
-    // Normalize date to midnight UTC to avoid time-component mismatches
-    const normalizedDate = new Date(date);
+    const normalizedDate = new Date(date || Date.now());
     normalizedDate.setUTCHours(0, 0, 0, 0);
 
     const attendance = await Attendance.findOneAndUpdate(
@@ -148,7 +20,7 @@ const markAttendance = async (req, res) => {
         subject: subjectId,
         date: normalizedDate,
         status,
-        markedBy: req.user.profileId,
+        markedBy: req.user.profileId || req.user._id,
         remarks
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
@@ -164,11 +36,15 @@ const getClassAttendance = async (req, res) => {
   try {
     const { classId, date } = req.query;
 
-    // Normalize date to midnight UTC for consistent querying
-    const normalizedDate = new Date(date);
-    normalizedDate.setUTCHours(0, 0, 0, 0);
+    const filter = {};
+    if (classId) filter.class = classId;
+    if (date) {
+      const normalizedDate = new Date(date);
+      normalizedDate.setUTCHours(0, 0, 0, 0);
+      filter.date = normalizedDate;
+    }
 
-    const attendance = await Attendance.find({ class: classId, date: normalizedDate })
+    const attendance = await Attendance.find(filter)
       .populate('student')
       .populate('class')
       .populate('subject');
@@ -193,9 +69,10 @@ const getStudentAttendance = async (req, res) => {
 
 const createAssignment = async (req, res) => {
   try {
+    const teacherId = req.user.profileId || req.user._id;
     const assignment = await Assignment.create({
       ...req.body,
-      teacher: req.user.profileId
+      teacher: teacherId
     });
     res.status(201).json(assignment);
   } catch (error) {
@@ -205,7 +82,10 @@ const createAssignment = async (req, res) => {
 
 const getAssignments = async (req, res) => {
   try {
-    const assignments = await Assignment.find({ teacher: req.user.profileId })
+    const teacherId = req.user.profileId || req.user._id;
+    const filter = req.user.role === 'admin' ? {} : { teacher: teacherId };
+    
+    const assignments = await Assignment.find(filter)
       .populate('subject')
       .populate('class')
       .sort({ createdAt: -1 });
@@ -258,6 +138,7 @@ const submitAssignment = async (req, res) => {
   try {
     const { assignmentId } = req.params;
     const { attachments } = req.body;
+    const studentId = req.user.profileId || req.user._id;
 
     const assignment = await Assignment.findById(assignmentId);
     if (!assignment) {
@@ -265,7 +146,7 @@ const submitAssignment = async (req, res) => {
     }
 
     const existingSubmission = assignment.submissions.find(
-      sub => sub.student.toString() === req.user.profileId.toString()
+      sub => sub.student && sub.student.toString() === studentId.toString()
     );
 
     if (existingSubmission) {
@@ -274,7 +155,7 @@ const submitAssignment = async (req, res) => {
       existingSubmission.status = 'submitted';
     } else {
       assignment.submissions.push({
-        student: req.user.profileId,
+        student: studentId,
         attachments,
         status: 'submitted'
       });
@@ -298,7 +179,7 @@ const gradeSubmission = async (req, res) => {
     }
 
     const submission = assignment.submissions.find(
-      sub => sub.student.toString() === studentId
+      sub => sub.student && sub.student.toString() === studentId.toString()
     );
 
     if (!submission) {
@@ -318,9 +199,10 @@ const gradeSubmission = async (req, res) => {
 
 const createMark = async (req, res) => {
   try {
+    const teacherId = req.user.profileId || req.user._id;
     const mark = await Mark.create({
       ...req.body,
-      markedBy: req.user.profileId
+      markedBy: teacherId
     });
     res.status(201).json(mark);
   } catch (error) {
@@ -382,15 +264,19 @@ const deleteMark = async (req, res) => {
 
 const getAssignedClasses = async (req, res) => {
   try {
-    const teacher = await Teacher.findById(req.user.profileId)
+    const profileId = req.user.profileId;
+    if (!profileId) {
+      return res.json({ classes: [], subjects: [] });
+    }
+    const teacher = await Teacher.findById(profileId)
       .populate('assignedClasses')
       .populate('assignedSubjects');
     if (!teacher) {
-      return res.status(404).json({ message: 'Teacher profile not found' });
+      return res.json({ classes: [], subjects: [] });
     }
     res.json({
-      classes: teacher.assignedClasses,
-      subjects: teacher.assignedSubjects
+      classes: teacher.assignedClasses || [],
+      subjects: teacher.assignedSubjects || []
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -426,4 +312,3 @@ module.exports = {
   getAssignedClasses,
   getClassStudents
 };
->>>>>>> f433320e63b0b06420c9a1d7e9143a961f6f97f7

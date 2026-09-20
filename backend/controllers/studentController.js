@@ -1,126 +1,3 @@
-<<<<<<< HEAD
-import Student from "../models/Student.js";
-
-// @desc    Get all students
-// @route   GET /api/students
-// @access  Private (Admin, Teacher)
-export const getAllStudents = async (req, res) => {
-  try {
-    const students = await Student.find()
-      .populate("user", "name email role")
-      .populate("class", "name grade section")
-      .sort({ createdAt: -1 });
-    
-    res.json(students);
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
-
-// @desc    Get single student
-// @route   GET /api/students/:id
-// @access  Private (Admin, Teacher, Student - own profile)
-export const getStudentById = async (req, res) => {
-  try {
-    const student = await Student.findById(req.params.id)
-      .populate("user", "name email role")
-      .populate("class", "name grade section")
-      .populate("subjects", "name code");
-    
-    if (!student) {
-      return res.status(404).json({ message: "Student not found" });
-    }
-    
-    res.json(student);
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
-
-// @desc    Create new student
-// @route   POST /api/students
-// @access  Private (Admin)
-export const createStudent = async (req, res) => {
-  try {
-    const student = await Student.create(req.body);
-    
-    // Add student to class if class is provided
-    if (req.body.class) {
-      const Class = (await import("../models/Class.js")).default;
-      await Class.findByIdAndUpdate(
-        req.body.class,
-        { $push: { students: student._id } }
-      );
-    }
-    
-    res.status(201).json(student);
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
-
-// @desc    Update student
-// @route   PUT /api/students/:id
-// @access  Private (Admin, Student - own profile)
-export const updateStudent = async (req, res) => {
-  try {
-    const student = await Student.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
-    
-    if (!student) {
-      return res.status(404).json({ message: "Student not found" });
-    }
-    
-    res.json(student);
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
-
-// @desc    Delete student
-// @route   DELETE /api/students/:id
-// @access  Private (Admin)
-export const deleteStudent = async (req, res) => {
-  try {
-    const student = await Student.findByIdAndDelete(req.params.id);
-    
-    if (!student) {
-      return res.status(404).json({ message: "Student not found" });
-    }
-    
-    // Remove student from class
-    if (student.class) {
-      const Class = (await import("../models/Class.js")).default;
-      await Class.findByIdAndUpdate(
-        student.class,
-        { $pull: { students: student._id } }
-      );
-    }
-    
-    res.json({ message: "Student deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
-
-// @desc    Get students by class
-// @route   GET /api/students/class/:classId
-// @access  Private (Admin, Teacher)
-export const getStudentsByClass = async (req, res) => {
-  try {
-    const students = await Student.find({ class: req.params.classId })
-      .populate("user", "name email")
-      .sort({ name: 1 });
-    
-    res.json(students);
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
-=======
 const Student = require('../models/Student');
 const Attendance = require('../models/Attendance');
 const Assignment = require('../models/Assignment');
@@ -128,7 +5,6 @@ const Mark = require('../models/Mark');
 
 const getProfile = async (req, res) => {
   try {
-    // profileId is null if admin hasn't created a profile for this user yet
     if (!req.user.profileId) {
       return res.status(404).json({
         message: 'Profile not set up yet',
@@ -157,7 +33,6 @@ const updateProfile = async (req, res) => {
       return res.status(404).json({ message: 'No profile linked to this account' });
     }
 
-    // Only allow safe fields to be updated by student themselves
     const allowed = ['firstName', 'lastName', 'phone', 'address', 'photo'];
     const updates = {};
     allowed.forEach((key) => {
@@ -229,7 +104,7 @@ const getAssignments = async (req, res) => {
     
     const assignmentsWithStatus = assignments.map(assignment => {
       const submission = assignment.submissions.find(
-        sub => sub.student.toString() === req.user.profileId.toString()
+        sub => sub.student && sub.student.toString() === req.user.profileId.toString()
       );
       return {
         ...assignment.toObject(),
@@ -255,7 +130,7 @@ const getAssignmentById = async (req, res) => {
     }
 
     const submission = assignment.submissions.find(
-      sub => sub.student.toString() === req.user.profileId.toString()
+      sub => sub.student && sub.student.toString() === req.user.profileId.toString()
     );
 
     res.json({
@@ -284,7 +159,7 @@ const getMarksSummary = async (req, res) => {
     
     const subjectWise = {};
     marks.forEach(mark => {
-      const subjectName = mark.subject.name;
+      const subjectName = mark.subject ? mark.subject.name : 'Unknown';
       if (!subjectWise[subjectName]) {
         subjectWise[subjectName] = {
           totalObtained: 0,
@@ -292,19 +167,23 @@ const getMarksSummary = async (req, res) => {
           count: 0
         };
       }
-      subjectWise[subjectName].totalObtained += mark.marksObtained;
-      subjectWise[subjectName].totalMarks += mark.totalMarks;
+      subjectWise[subjectName].totalObtained += (mark.marksObtained || 0);
+      subjectWise[subjectName].totalMarks += (mark.totalMarks || 100);
       subjectWise[subjectName].count += 1;
     });
 
     const summary = Object.keys(subjectWise).map(subject => ({
       subject,
-      averagePercentage: ((subjectWise[subject].totalObtained / subjectWise[subject].totalMarks) * 100).toFixed(2),
+      averagePercentage: subjectWise[subject].totalMarks > 0 
+        ? ((subjectWise[subject].totalObtained / subjectWise[subject].totalMarks) * 100).toFixed(2)
+        : 0,
       totalExams: subjectWise[subject].count
     }));
 
-    const overallPercentage = marks.length > 0 
-      ? ((marks.reduce((sum, m) => sum + m.marksObtained, 0) / marks.reduce((sum, m) => sum + m.totalMarks, 0)) * 100).toFixed(2)
+    const totalObtainedSum = marks.reduce((sum, m) => sum + (m.marksObtained || 0), 0);
+    const totalMarksSum = marks.reduce((sum, m) => sum + (m.totalMarks || 100), 0);
+    const overallPercentage = totalMarksSum > 0 
+      ? ((totalObtainedSum / totalMarksSum) * 100).toFixed(2)
       : 0;
 
     res.json({
@@ -327,4 +206,3 @@ module.exports = {
   getMarks,
   getMarksSummary
 };
->>>>>>> f433320e63b0b06420c9a1d7e9143a961f6f97f7

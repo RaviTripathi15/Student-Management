@@ -1,27 +1,31 @@
-import express from "express";
-import cors from "cors";
-import authRoutes from "./routes/authRoutes.js";
-import studentRoutes from "./routes/studentRoutes.js";
-import teacherRoutes from "./routes/teacherRoutes.js";
-import classRoutes from "./routes/classRoutes.js";
-import subjectRoutes from "./routes/subjectRoutes.js";
-import attendanceRoutes from "./routes/attendanceRoutes.js";
-import assignmentRoutes from "./routes/assignmentRoutes.js";
-import marksRoutes from "./routes/marksRoutes.js";
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const hpp = require('hpp');
+const errorHandler = require('./middleware/errorHandler');
+const { apiLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+app.use(helmet());
+app.use(mongoSanitize());
+app.use(hpp());
 
-// API Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/students", studentRoutes);
-app.use("/api/teachers", teacherRoutes);
-app.use("/api/classes", classRoutes);
-app.use("/api/subjects", subjectRoutes);
-app.use("/api/attendance", attendanceRoutes);
-app.use("/api/assignments", assignmentRoutes);
-app.use("/api/marks", marksRoutes);
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true
+}));
 
-export default app;
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
+app.use('/api', apiLimiter);
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/teacher', require('./routes/teacherRoutes'));
+app.use('/api/student', require('./routes/studentRoutes'));
+
+app.use(errorHandler);
+
+module.exports = app;

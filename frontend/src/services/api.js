@@ -1,12 +1,3 @@
-<<<<<<< HEAD
-import axios from "axios";
-
-const API = axios.create({
-  baseURL: "http://localhost:5000/api", // change to your backend port/route prefix
-});
-
-export default API;
-=======
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -16,7 +7,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json'
   },
-  timeout: 10000
+  timeout: 15000
 });
 
 api.interceptors.request.use((config) => {
@@ -32,7 +23,10 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      localStorage.removeItem('user');
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -122,4 +116,3 @@ export const studentAPI = {
 };
 
 export default api;
->>>>>>> f433320e63b0b06420c9a1d7e9143a961f6f97f7

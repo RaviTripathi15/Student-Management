@@ -1,78 +1,27 @@
-<<<<<<< HEAD
-import mongoose from "mongoose";
-
-const subjectSchema = new mongoose.Schema(
-  {
-    name: {
-      type: String,
-      required: true
-    },
-    code: {
-      type: String,
-      required: true,
-      unique: true
-    },
-    description: {
-      type: String
-    },
-    classes: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Class"
-    }],
-    teachers: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Teacher"
-    }],
-    credits: {
-      type: Number,
-      default: 1
-    },
-    totalMarks: {
-      type: Number,
-      default: 100
-    },
-    passMarks: {
-      type: Number,
-      default: 40
-    },
-    status: {
-      type: String,
-      enum: ["Active", "Inactive"],
-      default: "Active"
-    }
-  },
-  {
-    timestamps: true
-  }
-);
-
-const Subject = mongoose.model("Subject", subjectSchema);
-
-export default Subject;
-=======
 const mongoose = require('mongoose');
 
 const subjectSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    unique: true
+    trim: true
   },
   code: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
+    trim: true
   },
   description: {
     type: String
   },
   credits: {
     type: Number,
-    default: 1
+    default: 3
   },
   grade: {
-    type: Number,
-    required: true
+    type: String,
+    default: '10'
   },
   teacher: {
     type: mongoose.Schema.Types.ObjectId,
@@ -87,4 +36,3 @@ const subjectSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model('Subject', subjectSchema);
->>>>>>> f433320e63b0b06420c9a1d7e9143a961f6f97f7
